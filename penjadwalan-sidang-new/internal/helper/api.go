@@ -7,7 +7,8 @@ import (
 	"strconv"
 )
 
-const PengajuanURI = "http://localhost:3000"
+// const PengajuanURI = "http://localhost:3000"
+const PengajuanURI = "http://pendaftaran_sidang_container:3000"
 
 func GetPengajuanById(pengajuanId int, token string) *web.PengajuanResponseApi {
 	client := resty.New()
