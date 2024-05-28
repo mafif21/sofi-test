@@ -7,7 +7,7 @@ COPY . .
 ENV DB_HOST=mysql-container
 ENV DB_USER=root
 ENV DB_PASSWORD=root
-ENV DB_NAME=pendaftaran_sidang
+ENV DB_NAME=pendaftaran_sidang_test
 ENV DB_PORT=3306
 
 ENV PORT=3000
