@@ -1,0 +1,11 @@
+.env
+.idea
+.Note
+
+/public/*
+!/public/slides/
+/public/slides/*
+!/public/makalah/
+/public/makalah/*
+!/public/draft/
+/public/draft/*
