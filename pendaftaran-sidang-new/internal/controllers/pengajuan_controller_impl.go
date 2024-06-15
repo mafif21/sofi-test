@@ -255,6 +255,12 @@ func (c PengajuanControllerImpl) Create(ctx *fiber.Ctx) error {
 
 	docTa, errDocTa := ctx.FormFile("doc_ta")
 	makalah, errMakalah := ctx.FormFile("makalah")
+
+	const maxFileSize = 5 * 1024 * 1024
+	if docTa.Size > maxFileSize || makalah.Size > maxFileSize {
+		return ctx.Status(fiber.StatusBadRequest).JSON(exception.NewErrorResponse(fiber.StatusBadRequest, "file size exceeds 5MB"))
+	}
+
 	if docTa == nil || makalah == nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(&exception.ErrorResponse{
 			Code:    fiber.StatusBadRequest,
@@ -313,7 +319,7 @@ func (c PengajuanControllerImpl) Create(ctx *fiber.Ctx) error {
 
 func (c PengajuanControllerImpl) Update(ctx *fiber.Ctx) error {
 	userRoles := ctx.Locals("role").([]string)
-	rolesToCheck := []string{"RLMHS", "RLADM", "RLSPR", "RLPIC", "RLPBB", "RLPGJ"}
+	rolesToCheck := []string{"RLMHS", "RLADM", "RLPIC", "RLPBB", "RLPGJ", "RLSPR"}
 
 	canAccess := slices.ContainsFunc(rolesToCheck, func(target string) bool {
 		return slices.Contains(userRoles, target)
@@ -337,6 +343,12 @@ func (c PengajuanControllerImpl) Update(ctx *fiber.Ctx) error {
 	pengajuanRequest := web.PengajuanUpdateRequest{}
 	pengajuanRequest.Id = pengajuanId
 
+	allowedExtensions := map[string]bool{
+		".pdf":  true,
+		".doc":  true,
+		".docx": true,
+	}
+
 	if err := ctx.BodyParser(&pengajuanRequest); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(&exception.ErrorResponse{
 			Code:    fiber.StatusBadRequest,
@@ -345,7 +357,21 @@ func (c PengajuanControllerImpl) Update(ctx *fiber.Ctx) error {
 	}
 
 	docTa, docTaErr := ctx.FormFile("doc_ta")
+
 	if docTa != nil {
+		const maxFileSize = 5 * 1024 * 1024
+		if docTa.Size > maxFileSize {
+			return ctx.Status(fiber.StatusBadRequest).JSON(exception.NewErrorResponse(fiber.StatusBadRequest, "file size exceeds 5MB"))
+		}
+
+		docTaExt := filepath.Ext(docTa.Filename)
+		if !allowedExtensions[docTaExt] {
+			return ctx.Status(fiber.StatusBadRequest).JSON(&exception.ErrorResponse{
+				Code:    fiber.StatusBadRequest,
+				Message: "Only .pdf, .doc, or .docx files are allowed",
+			})
+		}
+
 		docTaNewFilename, err := helper.FileHandler(docTaErr, docTa)
 		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(&exception.ErrorResponse{
@@ -356,11 +382,24 @@ func (c PengajuanControllerImpl) Update(ctx *fiber.Ctx) error {
 
 		docTa.Filename = docTaNewFilename
 		pengajuanRequest.DocTa = docTa.Filename
-		_ = ctx.SaveFile(docTa, fmt.Sprintf("./public/doc_ta/%s", docTa.Filename))
 	}
 
 	makalah, makalahErr := ctx.FormFile("makalah")
+
 	if makalah != nil {
+		const maxFileSize = 5 * 1024 * 1024
+		if makalah.Size > maxFileSize {
+			return ctx.Status(fiber.StatusBadRequest).JSON(exception.NewErrorResponse(fiber.StatusBadRequest, "file size exceeds 5MB"))
+		}
+
+		makalahExt := filepath.Ext(makalah.Filename)
+		if !allowedExtensions[makalahExt] {
+			return ctx.Status(fiber.StatusBadRequest).JSON(&exception.ErrorResponse{
+				Code:    fiber.StatusBadRequest,
+				Message: "Only .pdf, .doc, or .docx files are allowed",
+			})
+		}
+
 		makalahNewFileName, err := helper.FileHandler(makalahErr, makalah)
 		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).JSON(&exception.ErrorResponse{
@@ -371,12 +410,19 @@ func (c PengajuanControllerImpl) Update(ctx *fiber.Ctx) error {
 
 		makalah.Filename = makalahNewFileName
 		pengajuanRequest.Makalah = makalah.Filename
-		_ = ctx.SaveFile(makalah, fmt.Sprintf("./public/makalah/%s", makalah.Filename))
 	}
 
 	updatedData, err := c.PengajuanService.Update(&pengajuanRequest)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(err)
+	}
+
+	if makalah != nil {
+		_ = ctx.SaveFile(makalah, fmt.Sprintf("./public/makalah/%s", makalah.Filename))
+	}
+
+	if docTa != nil {
+		_ = ctx.SaveFile(docTa, fmt.Sprintf("./public/doc_ta/%s", docTa.Filename))
 	}
 
 	webResponse := web.WebResponse{

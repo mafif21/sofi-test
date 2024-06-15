@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"github.com/go-resty/resty/v2"
@@ -30,27 +31,27 @@ func GetDetailStudent(studentId int) (*web.GetDetailStudentResponse, error) {
 	return result, nil
 }
 
-//	func UpdatePeminatanByUserId(peminatanId int, userId int) (*web.GetDetailStudentResponse, error) {
-//		client := resty.New()
-//		result := &web.GetDetailStudentResponse{}
-//
-//		res, err := client.R().SetResult(&result).
-//			SetHeader("Content-Type", "application/json").
-//			SetBody(map[string]interface{}{
-//				"peminatan_id": peminatanId,
-//			}).Patch(apiUrl + "/api/sidang/update/" + strconv.Itoa(userId))
-//
-//		if err != nil {
-//			return nil, err
-//		}
-//
-//		if res.StatusCode() != 200 || res.IsError() {
-//			return nil, errors.New("failed to update student data")
-//		}
-//
-//		return result, nil
-//	}
-//
+func UpdatePeminatanByUserId(peminatanId int, userId int) (*web.GetDetailStudentResponse, error) {
+	client := resty.New()
+	result := &web.GetDetailStudentResponse{}
+
+	res, err := client.R().SetResult(&result).
+		SetHeader("Content-Type", "application/json").
+		SetBody(map[string]interface{}{
+			"peminatan_id": peminatanId,
+		}).Patch(apiUrl + "/api/sidang/update/" + strconv.Itoa(userId))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode() != 200 || res.IsError() {
+		return nil, errors.New("failed to update student data")
+	}
+
+	return result, nil
+}
+
 //	func GetLectureKk(userId int) (*web.DetailLectureResponseApi, error) {
 //		client := resty.New()
 //		result := &web.DetailLectureResponseApi{}
@@ -147,6 +148,29 @@ func UpdateUserTeamID(userID int, teamID int) (*web.GetDetailStudentResponse, er
 			"team_id": teamID,
 		}).
 		Patch(apiUrl + "/api/student/team/update/" + strconv.Itoa(userID))
+
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode() != 200 || res.IsError() {
+		errResponse := &exception.ErrorResponse{}
+		if err = json.Unmarshal(res.Body(), errResponse); err != nil {
+			return nil, err
+		}
+		return nil, errors.New(errResponse.Message)
+	}
+
+	return result, nil
+}
+
+func GetAdmin() (*web.GetUser, error) {
+	client := resty.New().SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	result := &web.GetUser{}
+
+	res, err := client.R().SetResult(&result).
+		SetHeader("Content-Type", "application/json").
+		Get(apiUrl + "/api/users?role=rladm")
 
 	if err != nil {
 		return nil, err

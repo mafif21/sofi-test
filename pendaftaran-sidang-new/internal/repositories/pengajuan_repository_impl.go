@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
+	"pendaftaran-sidang-new/internal/helper"
 	"pendaftaran-sidang-new/internal/model/entity"
 	"reflect"
+	"strconv"
 )
 
 type PengajuanRepositoryImpl struct {
@@ -167,7 +169,7 @@ func (r PengajuanRepositoryImpl) Update(pengajuan *entity.Pengajuan) (*entity.Pe
 		}
 	}()
 
-	if err := tx.Save(&pengajuan).Error; err != nil {
+	if err := tx.Updates(&pengajuan).Error; err != nil {
 		tx.Rollback()
 		return nil, err
 	}
@@ -197,18 +199,30 @@ func (r PengajuanRepositoryImpl) Update(pengajuan *entity.Pengajuan) (*entity.Pe
 		},
 	}
 
+	admin, err := helper.GetAdmin()
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
 	newNotification := []entity.Notification{
 		{
 			UserId:  pengajuan.Pembimbing1Id,
 			Title:   "Mahasiswa Edit Data Pengajuan Sidang",
 			Message: "Mahasiswa dengan nim " + pengajuan.Nim + " melakukan perubahan data daftar sidang",
-			Url:     "/pengajuan/get",
+			Url:     "/pengajuan/get/" + strconv.Itoa(pengajuan.ID),
 		},
 		{
 			UserId:  pengajuan.Pembimbing2Id,
 			Title:   "Mahasiswa Edit Data Pengajuan Sidang",
 			Message: "Mahasiswa dengan nim " + pengajuan.Nim + " melakukan perubahan data daftar sidang",
-			Url:     "/pengajuan/get",
+			Url:     "/pengajuan/get/" + strconv.Itoa(pengajuan.ID),
+		},
+		{
+			UserId:  admin.Data.Id,
+			Title:   "Mahasiswa Edit Data Pengajuan Sidang",
+			Message: "Mahasiswa dengan nim " + pengajuan.Nim + " melakukan perbaikan data daftar sidang",
+			Url:     "/pengajuan/get/" + strconv.Itoa(pengajuan.ID),
 		},
 	}
 

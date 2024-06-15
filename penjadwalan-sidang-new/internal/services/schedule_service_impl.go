@@ -109,6 +109,11 @@ func (s ScheduleServiceImpl) Create(request *web.ScheduleCreateRequest, token st
 			return nil, exception.NewErrorResponse(fiber.StatusBadRequest, "pengajuan with id "+strconv.Itoa(pengajuanMember.PengajuanId)+" penguji 1 and penguji 2 cant same with pembimbing 2")
 		}
 
+		pengajuanDetail := helper.GetPengajuanById(pengajuanMember.PengajuanId, token)
+		if pengajuanDetail.Data.Status != "belum dijadwalkan" || pengajuanDetail.Data.Status != "tidak lulus (belum dijadwalkan)" {
+			return nil, exception.NewErrorResponse(fiber.StatusBadRequest, "pengajuan with id "+strconv.Itoa(pengajuanMember.PengajuanId)+" dont have team")
+		}
+
 		pengajuansId = append(pengajuansId, pengajuanMember.PengajuanId)
 	}
 

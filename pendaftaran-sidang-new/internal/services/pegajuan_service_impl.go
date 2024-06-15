@@ -83,7 +83,12 @@ func (s PengajuanServiceImpl) Create(request *web.PengajuanCreateRequest) (*web.
 		FormBimbingan2: request.FormBimbingan2,
 	}
 
-	newPengajuan.Kk = "Cybernetics"
+	student, err := helper.GetDetailStudent(request.UserId)
+	if err != nil {
+		return nil, exception.NewErrorResponse(fiber.StatusBadRequest, err.Error())
+	}
+
+	newPengajuan.Kk = student.Data.Kk
 
 	docTaUrl := fmt.Sprintf("/public/doc_ta/%s", request.DocTa)
 	newPengajuan.DocTa = docTaUrl
@@ -92,6 +97,11 @@ func (s PengajuanServiceImpl) Create(request *web.PengajuanCreateRequest) (*web.
 	newPengajuan.Makalah = makalahUrl
 
 	savedPengajuan, err := s.PengajuanRepository.Save(newPengajuan)
+	if err != nil {
+		return nil, exception.NewErrorResponse(fiber.StatusBadRequest, err.Error())
+	}
+
+	_, err = helper.UpdatePeminatanByUserId(request.Peminatan, request.UserId)
 	if err != nil {
 		return nil, exception.NewErrorResponse(fiber.StatusBadRequest, err.Error())
 	}
@@ -142,6 +152,11 @@ func (s PengajuanServiceImpl) Update(request *web.PengajuanUpdateRequest) (*web.
 	updatedData, err := s.PengajuanRepository.Update(oldData)
 	if err != nil {
 		return nil, exception.NewErrorResponse(fiber.StatusBadRequest, "failed to update data")
+	}
+
+	_, err = helper.UpdatePeminatanByUserId(request.Peminatan, oldData.UserId)
+	if err != nil {
+		return nil, exception.NewErrorResponse(fiber.StatusBadRequest, err.Error())
 	}
 
 	response := helper.ToPengajuanResponse(updatedData)

@@ -29,6 +29,15 @@ type DetailLectureResponseApi struct {
 	} `json:"data"`
 }
 
+type GetUser struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Id       int    `json:"id"`
+		Username string `json:"nip"`
+	} `json:"data"`
+}
+
 type MemberTeamResponse struct {
 	Code   int    `json:"code"`
 	Status string `json:"status"`
